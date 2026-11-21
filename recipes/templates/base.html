@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TasteTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { 
+            background-color: #f0f2f5; 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            overflow-x: hidden;
+        }
+        .navbar { box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+        .card { 
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .reaction-wrapper:hover .reaction-popover { display: block !important; }
+        .notification-badge { font-size: 0.65rem; padding: 3px 6px; }
+        .notification-item:hover {
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        .recipe-detail-img {
+            height: 450px; 
+            object-fit: cover; 
+            border-bottom: 2px solid #eaeaea;
+        }
+        .ingredients-list, .instructions-list {
+            white-space: pre-line; 
+            font-family: 'Georgia', 'serif'; 
+            line-height: 1.7;
+            background-color: #f8f9fa !important;
+        }
+        .related-recipe-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            overflow: hidden;
+        }
+        .related-recipe-card:hover,
+        .trending-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+        .related-img {
+            height: 140px; 
+            object-fit: cover;
+        }
+        .related-title {
+            font-size: 0.95rem;
+            line-height: 1.2;
+        }
+        .line-height-relaxed {
+            line-height: 1.8;
+        }
+        .form-control:focus, 
+        input:focus, 
+        textarea:focus {
+            background-color: transparent !important;
+            border-color: #dee2e6 !important;
+            box-shadow: none !important;
+            outline: 0 !important;
+        }
+        .input-group .form-control:focus {
+            z-index: 0 !important;
+        }
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        /* CHAT FUNCTION STYLES */
+        #chat-bubble {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 55px;
+            height: 55px;
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transition: transform 0.2s ease;
+        }
+        #chat-bubble:hover { transform: scale(1.1); }
+
+        #chat-popup {
+            position: fixed;
+            bottom: 90px;
+            right: 25px;
+            width: 280px; 
+            height: 400px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            display: none;
+            flex-direction: column;
+            z-index: 1050;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+        }
+        .chat-header {
+            padding: 12px 15px;
+            background: #fff;
+            color: #212529;
+            font-weight: bold;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .chat-body {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #fff;
+        }
+        .friend-item {
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        .friend-item:hover { background: #f0f7ff; }
+        .friend-avatar {
+            width: 35px;
+            height: 35px;
+            background: #e9ecef;
+            color: #0d6efd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        /* Message Bubbles */
+        .msg-received {
+            background: #f1f0f0;
+            border-radius: 15px;
+            padding: 8px 12px;
+            max-width: 85%;
+            font-size: 0.85rem;
+            color: #212529;
+        }
+        .msg-sent {
+            background: #0d6efd;
+            color: white;
+            border-radius: 15px;
+            padding: 8px 12px;
+            max-width: 85%;
+            font-size: 0.85rem;
+        }
+        .unread-glow {
+            background-color: #cdced0 !important; /* Very light gray instead of blue */
+            border-left: 4px solid #0d6efd; /* Small blue accent strip on the side */
+        }
+        
+        .unread-glow .fw-bold, 
+        .unread-glow .last-message-preview {
+            color: #212529 !important; 
+        }
+
+        .unread-glow .text-primary {
+            color: #0d6efd !important;
+            font-weight: 600;
+        }
+
+        .unread-indicator-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #0d6efd;
+            border-radius: 50%;
+        }
+
+        .last-message-preview {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'recipe_list' %}">🍳 TasteTrack</a>
+            <div class="d-flex align-items-center">
+                {% if user.is_authenticated %}
+                    <div class="dropdown me-3">
+                        <a href="javascript:void(0);" 
+                        class="nav-link text-white position-relative" 
+                        id="notificationDropdown" 
+                        data-bs-toggle="dropdown" 
+                        aria-expanded="false"
+                        data-url="{% url 'notifications' %}">
+                            🔔 {% if user.profile.unread_notifications_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge">
+                                    {{ user.profile.unread_notifications_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" 
+                            aria-labelledby="notificationDropdown" 
+                            style="width: 320px; border-radius: 12px; overflow: hidden; margin-top: 10px;">
+                            <div class="p-3 border-bottom bg-white">
+                                <h6 class="mb-0 fw-bold">Notifications</h6>
+                            </div>
+                            <div id="notification-items" style="max-height: 400px; overflow-y: auto;">
+                                <div class="text-center p-4">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="#" class="btn btn-sm btn-outline-light me-3" data-bs-toggle="modal" data-bs-target="#postRecipeModal">Post</a>
+
+                    <a href="{% url 'profile' user.username %}" class="text-white text-decoration-none me-3">@{{ user.username }}</a>
+                    <form action="{% url 'logout' %}" method="post" class="d-inline">
+                        {% csrf_token %}<button type="submit" class="btn btn-sm btn-link text-warning p-0 text-decoration-none">Logout</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-sm btn-outline-light me-2">Login</a>
+                    <a href="{% url 'register' %}" class="btn btn-sm btn-primary">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="pb-5">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% if user.is_authenticated %}
+    <div id="chat-bubble" onclick="toggleChat()">
+        <i class="bi bi-chat-fill"></i>
+    </div>
+
+    <div id="chat-popup">
+        <div class="chat-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <button id="back-to-friends" class="btn btn-sm p-0 me-2 d-none" onclick="showFriendList()">
+                    <i class="bi bi-chevron-left text-primary"></i>
+                </button>
+                <span id="chat-title" class="small fw-bold">Messages</span>
+            </div>
+            <button class="btn btn-sm p-0" onclick="toggleChat()"><i class="bi bi-x-lg text-muted"></i></button>
+        </div>
+
+        <div id="friend-list-view" class="chat-body">
+    <p class="text-muted small px-3 mt-3 mb-2">FRIENDS</p>
+    {% for friend in mutual_friends %}
+    <div class="friend-item d-flex align-items-center {% if friend.unread_count > 0 %}unread-glow{% endif %}" onclick="openPrivateChat('{{ friend.username }}')">
+        <div class="friend-avatar text-uppercase">{{ friend.username|first }}</div>
+        <div class="flex-grow-1 overflow-hidden">
+            <div class="fw-bold small {% if friend.unread_count > 0 %}text-white{% else %}text-dark{% endif %}">
+                @{{ friend.username }}
+            </div>
+            <div class="last-message-preview {% if friend.unread_count > 0 %}fw-bold text-primary{% else %}text-muted{% endif %}" style="font-size: 0.7rem;">
+                {% if friend.unread_count > 0 %}
+                    {{ friend.unread_count }} new message{{ friend.unread_count|pluralize }}
+                {% else %}
+                    {{ friend.last_preview }}
+                {% endif %}
+            </div>
+        </div>
+        {% if friend.unread_count > 0 %}
+            <div class="ms-2" style="width: 8px; height: 8px; background-color: #0d6efd; border-radius: 50%;"></div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+        <div id="private-chat-view" class="chat-body d-none d-flex flex-column">
+            <div id="message-display" class="flex-grow-1 p-3" style="overflow-y: auto; background: #fff;">
+                </div>
+            
+            <div class="p-2 border-top bg-white">
+                <div class="input-group">
+                    <input type="text" id="chat-input" class="form-control form-control-sm rounded-pill bg-light border-0" placeholder="Aa" style="font-size: 0.85rem;">
+                    <button id="send-btn" class="btn btn-link btn-sm text-primary p-0 ms-2" type="button" onclick="sendMessage()">
+                        <i class="bi bi-send-fill fs-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Notifications</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div id="modal-body-content" class="modal-body">
+                    <div class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="postRecipeModal" tabindex="-1" aria-labelledby="postRecipeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="postRecipeModalLabel">Create New Post</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form action="{% url 'recipe_create' %}" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Recipe Title</label>
+                            <input type="text" name="title" class="form-control rounded-3" placeholder="What are you cooking?" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Brief Description</label>
+                            <textarea name="description" class="form-control rounded-3" rows="2" placeholder="Describe your dish..."></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Prep Time (mins)</label>
+                                <input type="number" name="prep_time" class="form-control rounded-3" value="15">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label small fw-bold">Difficulty</label>
+                                <select name="difficulty" class="form-select rounded-3">
+                                    <option value="Easy">Easy</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Hard">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Ingredients</label>
+                            <textarea name="ingredients" class="form-control rounded-3" rows="4" placeholder="List your ingredients here..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Instructions</label>
+                            <textarea name="instructions" class="form-control rounded-3" rows="4" placeholder="Step-by-step guide..."></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold">Food Photo</label>
+                            <input type="file" name="image" class="form-control rounded-3" accept="image/*">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2">Post Recipe</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let chatInterval = null;
+
+    function toggleChat() {
+        const chatPopup = document.getElementById('chat-popup');
+        chatPopup.style.display = (chatPopup.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    // Function to fetch messages from the server
+    function fetchMessages() {
+        const chatTitle = document.getElementById('chat-title').innerText;
+        if (chatTitle === "Messages") return; 
+        
+        const username = chatTitle.replace('@', '');
+        
+        fetch(`/messages/get/${username}/`)
+        .then(response => response.json())
+        .then(data => {
+            const display = document.getElementById('message-display');
+            const currentUser = "{{ user.username }}";
+            
+            let html = '<div class="text-center mb-3" style="font-size: 0.7rem; color: #adb5bd;"><i class="bi bi-lock-fill"></i> End-to-end encrypted</div>';
+            
+            data.messages.forEach(msg => {
+                if (msg.sender === currentUser) {
+                    html += `<div class="d-flex mb-2 justify-content-end"><div class="msg-sent">${msg.body}</div></div>`;
+                } else {
+                    html += `<div class="d-flex mb-2"><div class="msg-received">${msg.body}</div></div>`;
+                }
+            });
+            
+            display.innerHTML = html;
+            display.scrollTop = display.scrollHeight;
+        });
+    }
+
+    function openPrivateChat(username) {
+    // --- 1. IMMEDIATE UI CLEAR (The "Instant" part) ---
+    // Find the specific friend item in the list
+    const friendItem = document.querySelector(`.friend-item[onclick*="'${username}'"]`);
+    
+    if (friendItem) {
+        // Remove the background highlight class
+        friendItem.classList.remove('unread-glow');
+        
+        // Remove the blue dot
+        const dot = friendItem.querySelector('.unread-dot-container');
+        if (dot) dot.remove();
+
+        // Change the text from "1 new message" back to a default or the last message
+        const previewText = friendItem.querySelector('.last-message-preview');
+        if (previewText) {
+            previewText.classList.remove('fw-bold', 'text-primary');
+            previewText.innerText = 'Click to send message'; 
+        }
+    }
+
+    // --- 2. REGULAR LOGIC ---
+    document.getElementById('chat-title').innerText = '@' + username;
+    document.getElementById('back-to-friends').classList.remove('d-none');
+    document.getElementById('friend-list-view').classList.add('d-none');
+    document.getElementById('private-chat-view').classList.remove('d-none');
+    document.getElementById('private-chat-view').classList.add('d-flex');
+
+    // --- 3. SERVER UPDATE ---
+    // This tells the database to mark it as read so it stays gone on reload
+    fetch(`/messages/mark-read/${username}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    });
+
+    fetchMessages(); 
+    if (chatInterval) clearInterval(chatInterval);
+    chatInterval = setInterval(fetchMessages, 3000);
+}
+
+    function showFriendList() {
+    const titleElement = document.getElementById('chat-title');
+    const currentUsername = titleElement.innerText.replace('@', ''); // Get name BEFORE changing title
+    
+    if (chatInterval) clearInterval(chatInterval);
+    
+    titleElement.innerText = 'Messages';
+    
+    document.getElementById('chat-title').innerText = 'Messages';
+    document.getElementById('back-to-friends').classList.add('d-none');
+    document.getElementById('private-chat-view').classList.add('d-none');
+    document.getElementById('private-chat-view').classList.remove('d-flex');
+    document.getElementById('friend-list-view').classList.remove('d-none');
+
+    // Now clear the glow for the friend you just left
+    const friendItems = document.querySelectorAll('.friend-item');
+    friendItems.forEach(item => {
+        if (item.innerHTML.includes('@' + currentUsername)) {
+            item.classList.remove('unread-glow');
+            const nameText = item.querySelector('.fw-bold');
+            if (nameText) {
+                nameText.classList.remove('text-white');
+                nameText.classList.add('text-dark');
+            }
+        }
+    });
+}
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const notificationItems = document.getElementById('notification-items');
+    const dropdownElement = document.getElementById('notificationDropdown');
+    const badge = document.querySelector('.notification-badge');
+
+    if (dropdownElement) {
+        // Use the Bootstrap event 'show.bs.dropdown' instead of a standard 'click'
+        dropdownElement.addEventListener('show.bs.dropdown', function () {
+            const url = this.getAttribute('data-url');
+            
+            console.log("Fetching notifications from:", url); // Check your console (F12) to see if this runs
+
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.text();
+            })
+            .then(html => {
+                notificationItems.innerHTML = html;
+                if (badge) badge.style.display = 'none';
+            })
+            .catch(err => {
+                console.error("Fetch error:", err);
+                notificationItems.innerHTML = "<p class='text-muted text-center p-3 small'>Error loading notifications.</p>";
+            });
+        });
+    }
+});
+
+    function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const message = input.value.trim();
+        const username = document.getElementById('chat-title').innerText.replace('@', '');
+
+        if (message === "") return;
+
+        fetch(`/messages/send/${username}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({ 'message': message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const display = document.getElementById('message-display');
+                
+                display.innerHTML += `
+                    <div class="d-flex mb-2 justify-content-end">
+                        <div class="msg-sent">${message}</div>
+                    </div>`;
+                
+                input.value = ''; 
+                display.scrollTop = display.scrollHeight; 
+            }
+        });
+    }
+
+    document.getElementById('chat-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

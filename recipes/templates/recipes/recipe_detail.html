@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* 1. Layout & Sticky Logic */
+    .sticky-sidebar {
+        position: sticky;
+        top: 90px; /* Aligns with the navbar height */
+        z-index: 100;
+        align-self: flex-start;
+    }
+
+    /* 2. Sidebar Link Styles */
+    .list-group-item {
+    border: none !important;
+    font-weight: 600;
+    background-color: white !important;
+    color: #212529 !important;
+    transition: 0.2s;
+}
+
+/* All items turn blue on hover here */
+.list-group-item:hover {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+
+    /* Popular Now (Red) */
+    .text-danger-bold {
+        color: #dc3545 !important;
+        font-weight: 700;
+    }
+
+    /* 3. Detail Page Adjustments */
+    .recipe-header-card {
+        border-radius: 1.2rem !important;
+        overflow: hidden;
+    }
+
+    /* Custom scrollbar for the ingredients/instructions */
+    .card-body::-webkit-scrollbar { width: 5px; }
+    .card-body::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
+
+    /* Trending Hover Effects */
+    .trending-item { transition: all 0.2s; border-radius: 10px; }
+    .trending-item:hover { background: #f8f9fa; transform: translateX(4px); }
+</style>
+
+<div class="container py-4" style="max-width: 1300px; background-color: #f0f2f5; min-height: 100vh;">
+    <div class="row justify-content-center gx-5 px-lg-3">
+        
+        <div class="col-lg-2 d-none d-lg-block">
+    <div class="sticky-sidebar">
+        <div class="list-group shadow-sm rounded-4 overflow-hidden bg-white">
+    <a href="{% url 'recipe_list' %}" class="list-group-item list-group-item-action p-3">
+        🏠 <span class="ms-1">Home Feed</span>
+    </a>
+    <a href="{% url 'popular_now' %}?sort=popular" class="list-group-item list-group-item-action p-3">
+        🔥 <span class="ms-1">Popular Now</span>
+    </a>
+    <a href="{% url 'profile' user.username %}" class="list-group-item list-group-item-action p-3">
+        👤 <span class="ms-1">My Kitchen</span>
+    </a>
+</div>
+        <p class="text-muted small mt-3 ps-2 opacity-50" style="font-size: 0.7rem;">© 2026 TasteTrack Inc.</p>
+    </div>
+</div>
+
+        <div class="col-12 col-md-9 col-lg-6 col-xl-5">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-white">
+                {% if recipe.image %}
+                    <img src="{{ recipe.image.url }}" class="card-img-top" style="height: 420px; object-fit: cover;">
+                {% endif %}
+                
+                <div class="card-body p-5" style="max-height: 600px; overflow-y: auto;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="fw-bold mb-0 text-dark">{{ recipe.title }}</h2>
+                        <form action="{% url 'add_reaction' recipe.pk 'like' %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-light rounded-pill px-3 py-1 shadow-sm border">
+                                <span class="me-1">{% if user_reaction == 'like' %}❤️{% else %}🤍{% endif %}</span>
+                                <small class="fw-bold">{{ recipe.reactions.count }}</small>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-4 text-muted small">
+                        <a href="{% url 'profile' recipe.author.username %}" class="fw-bold text-primary text-decoration-none">@{{ recipe.author.username }}</a> 
+                        <span class="mx-2">•</span> {{ recipe.date_posted|timesince }} ago
+                    </div>
+                    
+                    <p class="text-secondary mb-4 leading-relaxed">{{ recipe.description|linebreaks }}</p>
+
+                    <div class="bg-light rounded-4 p-4 mb-4">
+                        <h6 class="fw-bold text-dark text-uppercase small mb-3">Ingredients</h6>
+                        <div class="text-muted small" style="line-height: 1.8;">
+                            {{ recipe.ingredients|linebreaks }}
+                        </div>
+                    </div>
+
+                    <div class="bg-light rounded-4 p-4">
+                        <h6 class="fw-bold text-dark text-uppercase small mb-3">Instructions</h6>
+                        <div class="text-muted small" style="line-height: 1.8;">
+                            {{ recipe.instructions|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-5 bg-white">
+                <h6 class="fw-bold mb-4">Discussion ({{ comments.count }})</h6>
+                <form method="POST" class="mb-4">
+                    {% csrf_token %}
+                    <div class="input-group bg-light rounded-pill p-1 ps-3 border shadow-sm">
+                        <input type="text" name="content" class="form-control bg-transparent border-0 small" placeholder="Write a comment..." required>
+                        <button class="btn btn-primary rounded-pill px-4 fw-bold" type="submit">Post</button>
+                    </div>
+                </form>
+                <div class="comment-feed">
+                    {% for comment in comments %}
+                        <div class="mb-3">
+                            <div class="bg-light rounded-4 p-3 w-100 shadow-sm">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="fw-bold small text-primary">@{{ comment.author.username }}</span>
+                                    <small class="text-muted" style="font-size: 0.7rem;">{{ comment.date_posted|timesince }}</small>
+                                </div>
+                                <p class="mb-0 text-dark small">{{ comment.content }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 d-none d-lg-block">
+    <div class="sticky-top" style="top: 85px; align-self: flex-start; z-index: 10;">
+        
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
+            <h6 class="fw-bold text-dark mb-4">Trending Recipes 🔥</h6>
+            
+            {% for trend in trending_recipes|slice:":3" %}
+            <a href="{% url 'recipe_detail' trend.pk %}" class="text-decoration-none d-block trending-item p-1 mb-2">
+                <div class="d-flex align-items-center">
+                    {% if trend.image %}
+                    <img src="{{ trend.image.url }}" class="rounded-3 me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                    {% endif %}
+                    <div>
+                        <span class="d-block text-dark fw-bold small">
+                            {{ trend.title }}
+                        </span>
+                        <div class="text-muted small" style="font-size: 0.75rem;">
+                            @{{ trend.author.username }} • ❤️ {{ trend.num_reactions }} • 💬 {{ trend.comments.count }}
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+
+            <hr class="my-3">
+
+            <h6 class="fw-bold small mb-3">Popular Tags</h6>
+<div class="d-flex flex-wrap gap-2">
+    {% for tag in popular_tags %}
+        <a href="{% url 'recipe_list' %}?q={{ tag|urlencode }}" class="text-decoration-none">
+            <span class="badge bg-white text-muted border rounded-pill px-3 py-2 fw-medium shadow-sm">
+                {{ tag }}
+            </span>
+        </a>
+    {% empty %}
+        <small class="text-muted opacity-50">No tags found</small>
+    {% endfor %}
+</div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-dark text-white">
+            <h5 class="fw-bold mb-2">Hungry for more?</h5>
+            <p class="small opacity-75 mb-4">Share your own secret recipes with the community!</p>
+            <a href="{% url 'recipe_create' %}" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">
+                + Post a Recipe
+            </a>
+        </div>
+
+    </div>
+</div>
+    </div>
+</div>
+
+<style>
+    .rounded-4 { border-radius: 1.2rem !important; }
+    .leading-relaxed { line-height: 1.7; }
+    .card { border: 1px solid rgba(0,0,0,0.05); }
+    /* Scrollbar styling for the internal card scroll */
+    .card-body::-webkit-scrollbar { width: 5px; }
+    .card-body::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
+    
+    .trending-item { transition: all 0.2s; border-radius: 12px; }
+    .trending-item:hover { background: #f8f9fa; transform: translateX(4px); }
+</style>
+{% endblock %}

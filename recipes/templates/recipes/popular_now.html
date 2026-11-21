@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+    /* Keep your existing global colors and styles */
+    body { background-color: #f8f9fa; }
+
+    /* 1. The Grid Card - same design, new layout */
+    .pop-card {
+        border-radius: 20px !important;
+        background: #fff;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
+        transition: transform 0.3s ease;
+        height: 100%;
+    }
+    .pop-card:hover { transform: translateY(-8px); }
+
+    /* 2. Featured Image for Grid */
+    .pop-img-container {
+        height: 220px;
+        overflow: hidden;
+        border-radius: 20px 20px 0 0;
+        position: relative;
+    }
+    .pop-img-container img {
+        width: 100%; height: 100%; object-fit: cover;
+    }
+
+    /* 3. Rank Badge (Adds the 'Popular' feel) */
+    .rank-circle {
+        position: absolute;
+        top: 15px; left: 15px;
+        background: #0d6efd; /* Your brand blue */
+        color: white;
+        width: 35px; height: 35px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%; font-weight: bold;
+        z-index: 5;
+    }
+
+    /* New layout fixes for Chef of the Week text spacing and single-line reactions */
+    .chef-info-container {
+        display: flex;
+        align-items: center;
+        gap: 15px; /* Adjusts the distance between the circle and the text */
+    }
+    .chef-stats-text {
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        display: block;
+        max-width: 120px;
+    }
+</style>
+
+<div class="container-fluid py-4 px-lg-5">
+    <div class="row">
+        <div class="col-lg-2 d-none d-lg-block">
+            <div class="sticky-top" style="top: 80px;">
+                <div class="list-group shadow-sm rounded-4 overflow-hidden bg-white">
+                    <a href="{% url 'recipe_list' %}" class="list-group-item list-group-item-action p-3">
+                        🏠 <span class="ms-1">Home Feed</span>
+                    </a>
+                    <a href="{% url 'popular_now' %}" class="list-group-item list-group-item-action active p-3">
+                        🔥 <span class="ms-1">Popular Now</span>
+                    </a>
+                    <a href="{% url 'profile' user.username %}" class="list-group-item list-group-item-action p-3">
+                        👤 <span class="ms-1">My Kitchen</span>
+                    </a>
+                </div>
+
+                {% if top_chef %}
+<div class="mt-4">
+    <p class="text-muted small fw-bold px-3 mb-2 text-uppercase" style="letter-spacing: 1px; font-size: 0.7rem;">Chef of the Week</p>
+    
+    <div class="card border-0 rounded-4 shadow-sm bg-white" style="overflow: hidden;">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-center" style="gap: 12px;">
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm" 
+                     style="width: 40px; height: 40px; min-width: 40px; font-weight: bold;">
+                    {{ top_chef.username|first|upper }}
+                </div>
+                
+                <div style="min-width: 0;"> 
+                    <p class="mb-0 small fw-bold text-dark text-truncate">@{{ top_chef.username }}</p>
+                    <p class="mb-0 text-primary" 
+                       style="font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        🔥 {{ top_chef.true_total_likes }} Total Reactions
+                    </p>
+                </div>
+            </div>
+            
+            <hr class="my-3 opacity-5">
+            
+            <div class="d-grid">
+                <a href="{% url 'profile' top_chef.username %}" 
+                   class="btn btn-sm btn-light rounded-pill fw-bold text-primary border-0" 
+                   style="font-size: 0.75rem; background-color: #f0f7ff;">
+                    View Kitchen
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-10">
+            <div class="mb-5 d-flex align-items-center">
+                <h2 class="fw-bold mb-0">🔥 Trending Today</h2>
+                <div class="ms-3 h-100 border-start ps-3 opacity-50">
+                    <span class="text-muted small">The most reacted recipes this week</span>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                {% for recipe in recipes %}
+                <div class="col-md-6 col-xl-4">
+                    <div class="card pop-card shadow-sm">
+                        <div class="pop-img-container">
+                            <div class="rank-circle">#{{ forloop.counter }}</div>
+                            {% if recipe.image %}
+                                <img src="{{ recipe.image.url }}" alt="{{ recipe.title }}">
+                            {% endif %}
+                            <div class="prep-badge" style="position: absolute; bottom: 12px; right: 12px; background: rgba(255,255,255,0.9); padding: 4px 10px; border-radius: 50px; font-size: 0.7rem; font-weight: 700;">
+                                ❤️ {{ recipe.reactions.count }}
+                            </div>
+                        </div>
+
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <small class="fw-bold text-primary">@{{ recipe.author.username }}</small>
+                                <span class="mx-2 text-muted">•</span>
+                                <small class="text-muted">{{ recipe.date_posted|timesince }}</small>
+                            </div>
+                            <h5 class="fw-bold mb-3">{{ recipe.title }}</h5>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
+                                <a href="{% url 'recipe_detail' recipe.pk %}" class="btn btn-sm btn-dark rounded-pill px-3">View Details</a>
+                                <span class="small text-muted">💬 {{ recipe.comments.count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+    /* 1. SIDEBAR & HOVER LOGIC */
+    .sticky-sidebar {
+        position: sticky;
+        top: 80px;
+        z-index: 100;
+        align-self: flex-start;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        scrollbar-width: none;
+    }
+    .sticky-sidebar::-webkit-scrollbar { display: none; }
+
+    .list-group-item-action:hover {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+
+    /* 2. PROFILE CORE STYLES */
+    .profile-banner-mini {
+        height: 100px;
+        background: linear-gradient(120deg, #1a1a1a, #343a40);
+        border-radius: 12px 12px 0 0;
+    }
+
+    .profile-avatar-styled {
+        width: 80px; height: 80px; font-size: 1.8rem;
+        border: 4px solid #fff; margin-top: -40px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1); font-weight: bold;
+    }
+
+    .stats-container {
+        background: #ffffff; border: 1px solid #dee2e6;
+        border-radius: 10px; display: inline-flex;
+        padding: 8px 12px; gap: 15px;
+    }
+
+    .stat-clickable:hover {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    /* 3. CARD & GALLERY */
+    .recipe-thumb-card {
+        border: none; border-radius: 15px;
+        overflow: hidden; background: #fff;
+        transition: transform 0.2s;
+    }
+    .recipe-thumb-card:hover { transform: translateY(-5px); }
+
+    .image-container { position: relative; height: 180px; }
+    .recipe-image { width: 100%; height: 100%; object-fit: cover; }
+
+    .recipe-title-overlay {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        background: linear-gradient(transparent, rgba(0,0,0,0.85));
+        padding: 20px 10px 10px 10px; color: white;
+    }
+
+    .recipe-footer { padding: 12px; background: #fff; border-top: 1px solid #f1f1f1; }
+
+    /* FIXED BUTTON LAYOUT */
+    .btn-action-group {
+        display: flex;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .btn-profile-action {
+        flex: 1;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 8px 0;
+        border-radius: 10px;
+        transition: all 0.2s;
+        border: 1px solid #eee;
+        background: white;
+    }
+
+    .btn-edit-style { color: #6c757d; }
+    .btn-edit-style:hover { background: #f8f9fa; border-color: #ddd; }
+
+    .btn-delete-style { color: #dc3545; border-color: #fee2e2; }
+    .btn-delete-style:hover { background: #fff5f5; border-color: #fecaca; }
+
+    /* 4. MODAL FIXES */
+    #modalContentBody .list-group-item-action:hover {
+        background-color: #f8f9fa !important;
+        color: #212529 !important;
+    }
+
+    #modalContentBody .list-group-item-action {
+        transition: background-color 0.2s;
+        border-left: none;
+        border-right: none;
+    }
+</style>
+
+<div class="container-fluid py-4 px-lg-5">
+    <div class="row justify-content-center">
+        
+        <div class="col-lg-2 d-none d-lg-block">
+            <div class="sticky-sidebar">
+                <div class="list-group shadow-sm rounded-4 overflow-hidden bg-white border-0">
+                    <a href="{% url 'recipe_list' %}" class="list-group-item list-group-item-action p-3">
+                        🏠 <span class="ms-1">Home Feed</span>
+                    </a>
+                    <a href="{% url 'popular_now' %}?sort=popular" class="list-group-item list-group-item-action p-3">
+                        🔥 <span class="ms-1">Popular Now</span>
+                    </a>
+                    <a href="{% url 'profile' user.username %}" class="list-group-item list-group-item-action active p-3">
+                        👤 <span class="ms-1">My Kitchen</span>
+                    </a>
+                </div>
+                <p class="text-muted small mt-3 ps-2 opacity-50" style="font-size: 0.7rem;">© 2026 TasteTrack Inc.</p>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-8 col-lg-5">
+            <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
+                <div class="profile-banner-mini"></div>
+                <div class="card-body text-center pt-0 pb-4">
+                    <div class="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center mx-auto profile-avatar-styled mb-2">
+                        {{ user_profile.username|first|upper }}
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                        <h4 class="fw-bold mb-0">@{{ user_profile.username }}</h4>
+                        {% if request.user != user_profile %}
+                            <form action="{% url 'toggle_follow' user_profile.username %}" method="POST" class="m-0">
+                                {% csrf_token %}
+                                {% if is_following %}
+                                    <button type="submit" class="btn btn-outline-dark btn-sm rounded-pill px-3" style="font-size: 0.7rem;">Unfollow</button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3" style="font-size: 0.7rem;">Follow</button>
+                                {% endif %}
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    <p class="text-muted small mb-3">
+                        {% if user_profile.profile.bio %}
+                            {{ user_profile.profile.bio }}
+                        {% else %}
+                            No bio yet.
+                        {% endif %}
+                    </p>
+
+                    <div class="stats-container mb-3 shadow-sm">
+                        <div class="text-center px-1">
+                            <span class="fw-bold d-block">{{ recipes.count }}</span>
+                            <small class="text-muted text-uppercase" style="font-size: 0.55rem;">Recipes</small>
+                        </div>
+                        <div class="text-center border-start ps-3 pe-1 stat-clickable" style="cursor: pointer;" onclick="openUserModal('{{ user_profile.username }}', 'followers')">
+                            <span class="fw-bold d-block">{{ follower_count }}</span>
+                            <small class="text-muted text-uppercase" style="font-size: 0.55rem;">Followers</small>
+                        </div>
+                        <div class="text-center border-start ps-3 pe-1 stat-clickable" style="cursor: pointer;" onclick="openUserModal('{{ user_profile.username }}', 'following')">
+                            <span class="fw-bold d-block">{{ following_count }}</span>
+                            <small class="text-muted text-uppercase" style="font-size: 0.55rem;">Following</small>
+                        </div>
+                        <div class="text-center border-start ps-3 pe-1">
+                            <span class="fw-bold d-block">{{ total_likes }}</span>
+                            <small class="text-muted text-uppercase" style="font-size: 0.55rem;">Likes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h6 class="fw-bold mb-3 text-secondary">My Gallery</h6>
+            <div class="row g-3">
+                {% for recipe in recipes %}
+                <div class="col-6">
+                    <div class="card recipe-thumb-card shadow-sm h-100">
+                        <div class="image-container">
+                            <a href="{% url 'recipe_detail' recipe.pk %}">
+                                {% if recipe.image %}
+                                    <img src="{{ recipe.image.url }}" class="recipe-image">
+                                {% else %}
+                                    <div class="bg-light h-100 d-flex align-items-center justify-content-center text-muted">No Image</div>
+                                {% endif %}
+                            </a>
+                            <div class="recipe-title-overlay">
+                                <h6 class="mb-0 fw-bold text-truncate">{{ recipe.title }}</h6>
+                            </div>
+                        </div>
+
+                        {% if user == user_profile %}
+                        <div class="recipe-footer">
+                            <div class="btn-action-group">
+                                {% if recipe.author == user %}
+                                <button type="button" class="btn-profile-action btn-edit-style" data-bs-toggle="modal" data-bs-target="#editModal{{ recipe.pk }}">
+                                    Edit
+                                </button>
+                                <button type="button" class="btn-profile-action btn-delete-style" data-bs-toggle="modal" data-bs-target="#deleteModal{{ recipe.pk }}">
+                                    Delete
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="modal fade" id="editModal{{ recipe.pk }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content border-0 shadow rounded-4">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title fw-bold text-dark">Edit Recipe</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <form action="{% url 'recipe_update' recipe.pk %}" method="POST" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Recipe Title</label>
+                                        <input type="text" name="title" class="form-control rounded-3" value="{{ recipe.title }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Brief Description</label>
+                                        <textarea name="description" class="form-control rounded-3" rows="2">{{ recipe.description }}</textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small fw-bold text-dark">Prep Time (mins)</label>
+                                            <input type="number" name="prep_time" class="form-control rounded-3" value="{{ recipe.prep_time }}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small fw-bold text-dark">Difficulty</label>
+                                            <select name="difficulty" class="form-select rounded-3">
+                                                <option value="Easy" {% if recipe.difficulty == "Easy" %}selected{% endif %}>Easy</option>
+                                                <option value="Medium" {% if recipe.difficulty == "Medium" %}selected{% endif %}>Medium</option>
+                                                <option value="Hard" {% if recipe.difficulty == "Hard" %}selected{% endif %}>Hard</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Ingredients</label>
+                                        <textarea name="ingredients" class="form-control rounded-3" rows="4">{{ recipe.ingredients }}</textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Instructions</label>
+                                        <textarea name="instructions" class="form-control rounded-3" rows="4">{{ recipe.instructions }}</textarea>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label small fw-bold text-dark">Change Photo</label>
+                                        <input type="file" name="image" class="form-control rounded-3" accept="image/*">
+                                    </div>
+                                    <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold">Save Changes</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="deleteModal{{ recipe.pk }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-sm">
+                        <div class="modal-content border-0 shadow rounded-4 text-center p-3">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <span class="display-6">🗑️</span>
+                                </div>
+                                <h5 class="fw-bold">Delete Recipe?</h5>
+                                <p class="text-muted small">This action cannot be undone. Are you sure you want to delete "{{ recipe.title }}"?</p>
+                                <div class="d-flex gap-2 mt-4">
+                                    <button type="button" class="btn btn-light rounded-pill flex-fill fw-bold" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{% url 'recipe_delete' recipe.pk %}" method="POST" class="flex-fill">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger rounded-pill w-100 fw-bold">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <p class="text-muted small">No recipes found.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="sticky-sidebar">
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-3 bg-white">
+                    <h6 class="fw-bold mb-3">👤 Profile Highlights</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <small class="text-muted">Member since</small>
+                        <small class="fw-bold">{{ user_profile.date_joined|date:"M Y" }}</small>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <small class="text-muted">Status</small>
+                        <small class="badge bg-success-subtle text-success border-0">{{ status }}</small>
+                    </div>
+                    <div class="bg-dark text-white rounded-3 p-2 d-flex align-items-center">
+                        <div class="me-2">{% if star_level == "Elite Creator" %}🏆{% else %}🌱{% endif %}</div>
+                        <div>
+                            <p class="mb-0 small fw-bold">{{ star_level }}</p>
+                            <p class="mb-0" style="font-size: 0.65rem; opacity: 0.8;">{{ growth_percent }}% growth this week</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
+                    <h6 class="fw-bold mb-2">🍳 Cooking Style</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for style in cooking_styles %}
+                            <span class="badge bg-light text-dark border">{{ style }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
+                    <h6 class="fw-bold mb-2">📊 Kitchen Stats</h6>
+                    <div class="small text-muted">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Top Ingredient</span>
+                            <span class="fw-bold">{{ top_ingredient }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Total Likes</span>
+                            <span class="fw-bold">{{ total_likes }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if user == user_profile %}
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white text-center">
+                    <h6 class="fw-bold small mb-2">Update Bio</h6>
+                    <form action="{% url 'profile_edit' %}" method="POST">
+                        {% csrf_token %}
+                        <textarea name="bio" class="form-control mb-2 text-center" rows="2">{{ user_profile.profile.bio }}</textarea>
+                        <button type="submit" class="btn btn-dark btn-sm w-100">Save Bio</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="userListModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow overflow-hidden" id="modalContentBody">
+            <div class="p-4 text-center">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openUserModal(username, type) {
+        const modalElement = document.getElementById('userListModal');
+        const contentContainer = document.getElementById('modalContentBody');
+        const modal = new bootstrap.Modal(modalElement);
+
+        contentContainer.innerHTML = '<div class="p-4 text-center"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
+        modal.show();
+
+        let url = "{% url 'user_list' username='PLACEHOLDER_USER' list_type='PLACEHOLDER_TYPE' %}";
+        url = url.replace('PLACEHOLDER_USER', username).replace('PLACEHOLDER_TYPE', type);
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.text();
+            })
+            .then(html => {
+                contentContainer.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                contentContainer.innerHTML = '<div class="p-3 text-center text-danger small">Error loading list.</div>';
+            });
+    }
+</script>
+
+{% endblock %}

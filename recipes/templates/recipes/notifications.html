@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-white fw-bold py-3">Your Notifications</div>
+            <div class="list-group list-group-flush">
+                {% for note in notes %}
+                    <div class="list-group-item {% if not note.is_read %}bg-light fw-bold{% endif %} p-3">
+                        <a href="{% url 'profile' note.sender.username %}" class="text-primary text-decoration-none">@{{ note.sender.username }}</a>
+                        {{ note.get_notification_type_display }} 
+                        <a href="{% url 'recipe_detail' note.recipe.pk %}" class="text-dark text-decoration-none">"{{ note.recipe.title }}"</a>
+                        <div class="text-muted small mt-1 fw-normal">{{ note.timestamp|timesince }} ago</div>
+                    </div>
+                {% empty %}<div class="p-5 text-center text-muted">No notifications yet.</div>{% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

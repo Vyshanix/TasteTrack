@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5" style="background-color: #f0f2f5; min-height: 100vh;">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                
+                <div class="card-header bg-dark text-white p-4 border-0">
+                    <h3 class="fw-bold mb-1">
+                        {% if edit_mode %}✍️ Edit Your Recipe{% else %}✨ Post a New Recipe{% endif %}
+                    </h3>
+                    <p class="small opacity-75 mb-0">Share your flavors with the TasteTrack community.</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-dark small text-uppercase">Recipe Title</label>
+                                {{ form.title }}
+                                {% if form.title.errors %}<div class="text-danger small">{{ form.title.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-dark small text-uppercase">Short Description</label>
+                                {{ form.description }}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small text-uppercase">Prep Time (Mins)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">⏱️</span>
+                                    {{ form.prep_time }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small text-uppercase">Difficulty</label>
+                                {{ form.difficulty }}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small text-uppercase">Ingredients</label>
+                                {{ form.ingredients }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-dark small text-uppercase">Instructions</label>
+                                {{ form.instructions }}
+                            </div>
+
+                            <div class="col-12">
+                                <div class="p-4 rounded-4 bg-light border border-2 border-dashed text-center">
+                                    <label class="form-label fw-bold text-dark d-block mb-3">📸 Dish Photo</label>
+                                    <div class="custom-file-container">
+                                        {{ form.image }}
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">Add a photo to make your recipe stand out!</small>
+                                </div>
+                            </div>
+
+                            <div class="col-12 mt-5">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm flex-grow-1">
+                                        {% if edit_mode %}Save Changes{% else %}Publish Recipe{% endif %}
+                                    </button>
+                                    <a href="{% url 'profile' user.username %}" class="btn btn-light btn-lg rounded-pill px-4 fw-bold border">
+                                        Cancel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 1. Global Field Styling (Fixes the blue focus glow for ALL fields) */
+    input, textarea, select {
+        display: block;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        background-color: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 0.75rem !important;
+        transition: all 0.2s ease-in-out;
+        outline: none !important;
+    }
+
+    /* The "Blue Something" (Focus State) */
+    input:focus, textarea:focus, select:focus {
+        background-color: #ffffff !important;
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15) !important;
+    }
+
+    /* 2. Styling the File Upload Button (Fixing the "weird" look) */
+    input[type="file"] {
+        padding: 0.5rem;
+        background-color: white !important;
+        cursor: pointer;
+    }
+
+    /* Styling the actual button inside the file input */
+    input[type="file"]::file-selector-button {
+        background-color: #212529;
+        color: white;
+        border: none;
+        padding: 0.4rem 1rem;
+        border-radius: 0.5rem;
+        margin-right: 1rem;
+        transition: background 0.2s;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    input[type="file"]::file-selector-button:hover {
+        background-color: #000;
+    }
+
+    /* 3. Layout Tweaks */
+    .input-group input {
+        border-top-left-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+    }
+
+    .rounded-4 { border-radius: 1.2rem !important; }
+    .border-dashed { border-style: dashed !important; }
+    textarea { min-height: 150px; }
+</style>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% for note in notes %}
+<div class="list-group-item border-0 border-bottom p-3">
+    <div class="d-flex align-items-center">
+        <div class="flex-grow-1">
+            <span class="fw-bold">@{{ note.sender.username }}</span>
+            
+            {% if note.notification_type == 'follow' %}
+                started following you! 👤
+            {% elif note.notification_type == 'react' %}
+                reacted to your recipe: 
+                {% if note.recipe %}
+                    <a href="{% url 'recipe_detail' note.recipe.id %}" class="text-decoration-none fw-bold">
+                        {{ note.recipe.title }}
+                    </a>
+                {% else %}
+                    <span class="text-muted italic">a deleted recipe</span>
+                {% endif %}
+            {% elif note.notification_type == 'repost' %}
+                reposted your recipe:
+                {% if note.recipe %}
+                    <a href="{% url 'recipe_detail' note.recipe.id %}" class="text-decoration-none fw-bold">
+                        {{ note.recipe.title }}
+                    </a>
+                {% endif %}
+            {% endif %}
+            
+            <div class="text-muted small mt-1">{{ note.timestamp|timesince }} ago</div>
+        </div>
+        
+        {% if not note.is_read %}
+            <span class="badge rounded-pill bg-primary" style="width: 8px; height: 8px; padding: 0;"> </span>
+        {% endif %}
+    </div>
+</div>
+{% empty %}
+<div class="p-4 text-center text-muted">No notifications yet.</div>
+{% endfor %}

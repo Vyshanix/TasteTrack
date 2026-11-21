@@ -1,0 +1,477 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+/* 1. Global Polish & Layout */
+body { background-color: #f8f9fa; }
+
+.recipe-card {
+ border-radius: 16px !important;
+ background: #fff;
+ border: none !important;
+ box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+ transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+ }
+
+ .recipe-card:hover {
+ transform: translateY(-6px);
+ box-shadow: 0 16px 30px rgba(0,0,0,0.10) !important;
+ }
+
+ /* 2. Fixed Independent Sticky Sidebars */
+.sticky-sidebar {
+    position: sticky;
+    top: 80px;
+    z-index: 100;
+    align-self: flex-start;
+    max-height: calc(100vh - 100px); 
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.sticky-sidebar::-webkit-scrollbar {
+    display: none;
+}
+
+ /* 3. Image Container & Badges */
+ .image-container { 
+ position: relative; 
+ overflow: hidden; 
+ }
+ 
+ .prep-badge {
+ position: absolute;
+ top: 12px;
+ left: 12px;
+ background: rgba(255,255,255,0.9);
+ backdrop-filter: blur(5px);
+ padding: 4px 10px;
+ border-radius: 50px;
+ font-size: 0.7rem;
+ font-weight: 700;
+ z-index: 10;
+ color: #333;
+ box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+ }
+
+ /* 4. Action Buttons */
+ .action-btn-container {
+ border-top: 1px solid #eee;
+ padding-top: 12px;
+ }
+
+ .action-btn {
+ border: none;
+ background: none;
+ color: #65676b;
+ font-weight: 600;
+ padding: 8px 12px;
+ border-radius: 8px;
+ transition: 0.2s;
+ font-size: 0.85rem;
+ display: flex;
+ align-items: center;
+ text-decoration: none;
+ }
+ 
+ .action-btn:hover { 
+ background: #f2f2f2; 
+ color: #0d6efd; 
+ }
+
+ /* 5. Reaction Popover */
+ .reaction-wrapper { 
+ position: relative; 
+ display: inline-block;
+ }
+ 
+ .reaction-popover {
+ display: none; 
+ position: absolute;
+ bottom: 110%; 
+ left: 0;
+ background: rgba(255, 255, 255, 0.98);
+ backdrop-filter: blur(10px);
+ padding: 10px 18px;
+ border-radius: 50px;
+ box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+ z-index: 1060;
+ flex-direction: row !important; 
+ gap: 15px; 
+ min-width: max-content;
+ animation: popIn 0.2s ease-out;
+ border: 1px solid #eee;
+ }
+
+ .reaction-popover::after {
+ content: "";
+ position: absolute;
+ top: 100%;
+ left: 0;
+ width: 100%;
+ height: 20px; 
+ background: transparent;
+ }
+
+ @keyframes popIn {
+ 0% { opacity: 0; transform: translateY(10px) scale(0.9); }
+ 100% { opacity: 1; transform: translateY(0) scale(1); }
+ }
+
+ .reaction-wrapper:hover .reaction-popover { 
+ display: flex !important; 
+ }
+
+ .reaction-icon {
+ text-decoration: none;
+ font-size: 1.8rem;
+ transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+ line-height: 1;
+ }
+ .reaction-icon:hover { 
+ transform: scale(1.4) translateY(-5px); 
+ }
+
+ .overlap-emoji {
+ width: 24px;
+ height: 24px;
+ background: white;
+ border: 2px solid #fff;
+ border-radius: 50%;
+ margin-left: -8px;
+ font-size: 12px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+ }
+
+ /* 6. Line Clamping */
+ .description-container {
+ display: -webkit-box;
+ -webkit-line-clamp: 2;
+ line-clamp: 2; 
+ -webkit-box-orient: vertical; 
+ overflow: hidden;
+ }
+ .description-container.expanded {
+ display: block;
+ -webkit-line-clamp: unset;
+ line-clamp: 2;
+ }
+
+ /* 7. Trending Sidebar */
+ .trending-item {
+ transition: background 0.2s, transform 0.2s;
+ border-radius: 10px;
+ }
+ .trending-item:hover {
+ background-color: #f8f9fa;
+ transform: translateX(5px);
+ }
+
+ .z-1 { z-index: 1; }
+ .z-2 { z-index: 2; }
+ .z-3 { z-index: 3; }
+
+ .list-group-item {
+       border: none !important;
+       font-weight: 600;
+       transition: 0.2s;
+}
+.list-group-item-action:hover:not(.active) {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+
+    .rounded-4 { 
+        border-radius: 1.2rem !important; 
+    }
+
+    .bg-dark .btn-primary {
+        background-color: #0d6efd;
+        border: none;
+    }
+
+    .bg-dark .btn-primary:hover {
+        background-color: #0b5ed7;
+    }
+</style>
+
+<div class="container-fluid py-4 px-lg-5">
+    <div class="row justify-content-center">
+        
+        <div class="col-lg-2 d-none d-lg-block">
+            <div class="sticky-sidebar">
+                <div class="list-group shadow-sm rounded-4 overflow-hidden bg-white">
+                    <a href="{% url 'recipe_list' %}" class="list-group-item list-group-item-action {% if not is_popular_page %}active{% endif %} p-3">
+                        🏠 <span class="ms-1">Home Feed</span>
+                    </a>
+                    <a href="{% url 'popular_now' %}" class="list-group-item list-group-item-action {% if is_popular_page %}active{% endif %} p-3">
+                        🔥 <span class="ms-1">Popular Now</span>
+                    </a>
+                    <a href="{% url 'profile' user.username %}" class="list-group-item list-group-item-action p-3">
+                        👤 <span class="ms-1">My Kitchen</span>
+                    </a>
+                </div>
+                <p class="text-muted small mt-3 ps-2 opacity-50" style="font-size: 0.7rem;">© 2026 TasteTrack Inc.</p>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-8 col-lg-5">
+            <form method="GET" action="{% url 'recipe_list' %}" class="input-group mb-4 shadow-sm rounded-pill overflow-hidden bg-white p-1">
+                <input type="text" name="q" class="form-control border-0 px-4" placeholder="Search recipes..." value="{{ request.GET.q }}">
+                <button class="btn btn-primary rounded-pill px-4" type="submit">Search</button>
+            </form>
+
+            {% if is_popular_page %}
+            <div class="mb-4 d-flex align-items-center">
+                <h4 class="fw-bold mb-0">🔥 Popular Now</h4>
+                <span class="badge bg-primary rounded-pill ms-3">Top Dishes</span>
+            </div>
+            {% endif %}
+
+            {% if external_results %}
+            <div class="mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <h6 class="fw-bold mb-0 text-secondary">🌍 Found Globally for "{{ query }}"</h6>
+                    <div class="flex-grow-1 ms-2 border-bottom opacity-25"></div>
+                </div>
+                <div class="row g-2 mb-4">
+                    {% for ex in external_results %}
+                    <div class="col-4">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden" style="background: #fff;">
+                            <img src="{{ ex.image }}" class="card-img-top" style="height: 100px; object-fit: cover;">
+                            <div class="card-body p-2 text-center">
+                                <p class="small fw-bold mb-1 text-truncate" style="font-size: 0.75rem;">{{ ex.title }}</p>
+                                <a href="https://www.google.com/search?q={{ ex.title|urlencode }}+recipe" target="_blank" class="btn btn-dark btn-sm py-0 w-100" style="font-size: 0.65rem;">View</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% for recipe in recipes %}
+                <div class="card recipe-card mb-4 border-0 shadow-sm">
+                    <div class="p-3 d-flex align-items-center">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-weight: bold;">
+                            {{ recipe.author.username|first|upper }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <a href="{% url 'profile' recipe.author.username %}" class="text-decoration-none fw-bold text-dark d-block">@{{ recipe.author.username }}</a>
+                            <small class="text-muted">{{ recipe.date_posted|timesince }} ago</small>
+                        </div>
+                        {% if recipe.author == user %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill border-0" data-bs-toggle="modal" data-bs-target="#editModal{{ recipe.pk }}">
+                            Edit
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                    {% if recipe.image %}
+                        <div class="image-container">
+                            <div class="prep-badge">
+                                ⏱️ {{ recipe.prep_time|default:"15" }}m • {{ recipe.difficulty|default:"Easy" }}
+                            </div>
+                            <a href="{% url 'recipe_detail' recipe.pk %}">
+                                <img src="{{ recipe.image.url }}" class="w-100" style="height: 420px; object-fit: cover;">
+                            </a>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body px-4">
+                        <h5 class="fw-bold mb-1">
+                            <a href="{% url 'recipe_detail' recipe.pk %}" class="text-decoration-none text-dark">{{ recipe.title }}</a>
+                        </h5>
+                        
+                        <div class="mb-3">
+                            <div id="desc-{{ recipe.pk }}" class="description-container text-secondary small">
+                                {{ recipe.description }}
+                            </div>
+                            {% if recipe.description|length > 100 %}
+                                <button id="btn-{{ recipe.pk }}" class="see-more-btn border-0 bg-transparent text-primary fw-bold p-0 small" onclick="toggleDescription('{{ recipe.pk }}')">See more</button>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex align-items-center action-btn-container pb-3">
+                            <div class="reaction-wrapper me-2">
+                                <div class="reaction-popover">
+                                    <a href="{% url 'add_reaction' recipe.pk '👍' %}" class="reaction-icon reaction-link">👍</a>
+                                    <a href="{% url 'add_reaction' recipe.pk '❤️' %}" class="reaction-icon reaction-link">❤️</a>
+                                    <a href="{% url 'add_reaction' recipe.pk '😋' %}" class="reaction-icon reaction-link">😋</a>
+                                </div>
+                                <button class="action-btn">
+                                    React {% if recipe.reactions.exists %}<span class="ms-2 fw-bold text-primary">{{ recipe.reactions.count }}</span>{% endif %}
+                                </button>
+                            </div>
+
+                            <a href="{% url 'recipe_detail' recipe.pk %}" class="action-btn me-2">
+                                💬 {{ recipe.comments.count }}
+                            </a>
+                            
+                            <form action="{% url 'repost_recipe' recipe.pk %}" method="POST" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="action-btn">
+                                    🔄 Repost
+                                </button>
+                            </form>
+
+                            {% if recipe.reactions.exists %}
+                            <div class="ms-auto d-flex align-items-center" data-bs-toggle="tooltip" data-bs-html="true" title="{% for r in recipe.reactions.all %}{{ r.author.username }} ({{ r.reaction_type }})<br>{% endfor %}">
+                                {% regroup recipe.reactions.all by reaction_type as reaction_list %}
+                                {% for reaction in reaction_list|slice:":3" %}
+                                    <div class="overlap-emoji z-{{ forloop.revcounter }}">
+                                        {{ reaction.grouper }}
+                                    </div>
+                                {% endfor %}    
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if recipe.author == user %}
+                <div class="modal fade" id="editModal{{ recipe.pk }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content border-0 shadow rounded-4">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title fw-bold">Edit Recipe</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <form action="{% url 'recipe_update' recipe.pk %}" method="POST" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Recipe Title</label>
+                                        <input type="text" name="title" class="form-control rounded-3" value="{{ recipe.title }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Brief Description</label>
+                                        <textarea name="description" class="form-control rounded-3" rows="2">{{ recipe.description }}</textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small fw-bold">Prep Time (mins)</label>
+                                            <input type="number" name="prep_time" class="form-control rounded-3" value="{{ recipe.prep_time }}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small fw-bold">Difficulty</label>
+                                            <select name="difficulty" class="form-select rounded-3">
+                                                <option value="Easy" {% if recipe.difficulty == "Easy" %}selected{% endif %}>Easy</option>
+                                                <option value="Medium" {% if recipe.difficulty == "Medium" %}selected{% endif %}>Medium</option>
+                                                <option value="Hard" {% if recipe.difficulty == "Hard" %}selected{% endif %}>Hard</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Ingredients</label>
+                                        <textarea name="ingredients" class="form-control rounded-3" rows="4">{{ recipe.ingredients }}</textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Instructions</label>
+                                        <textarea name="instructions" class="form-control rounded-3" rows="4">{{ recipe.instructions }}</textarea>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label small fw-bold">Change Photo</label>
+                                        <input type="file" name="image" class="form-control rounded-3" accept="image/*">
+                                    </div>
+                                    <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold">Save Changes</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            {% endfor %}
+        </div>
+
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="sticky-sidebar">
+                <div class="card border-0 shadow-sm p-4 rounded-3 bg-white mb-3">
+                    <h6 class="fw-bold mb-3 border-bottom pb-2">Trending Recipes 🔥</h6>
+                    
+                    {% for tr in trending_recipes|slice:":3" %}
+                        <a href="{% url 'recipe_detail' tr.pk %}" class="text-decoration-none d-block p-2 mb-2 trending-item">
+                            <div class="d-flex align-items-center">
+                                {% if tr.image %}
+                                <img src="{{ tr.image.url }}" class="rounded-2 me-3" style="width: 55px; height: 55px; object-fit: cover;">
+                                {% endif %}
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <span class="text-dark fw-bold small d-block text-truncate mb-1">{{ tr.title }}</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <small class="text-muted" style="font-size: 0.7rem;">@{{ tr.author.username }}</small>
+                                        <small class="text-primary" style="font-size: 0.7rem;">
+                                            ❤️ {{ tr.reactions.count }}
+                                        </small>
+                                        <small class="text-muted" style="font-size: 0.7rem;">
+                                            💬 {{ tr.comments.count }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    {% empty %}
+                        <p class="text-muted small text-center my-3">No trending content yet!</p>
+                    {% endfor %}
+
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="fw-bold small mb-3">Popular Tags</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for tag in popular_tags %}
+                                <a href="{% url 'recipe_list' %}?q={{ tag|urlencode }}" class="text-decoration-none">
+                                    <span class="badge bg-white text-muted border rounded-pill px-3 py-2 fw-medium shadow-sm">
+                                        {{ tag }}
+                                    </span>
+                                </a>
+                            {% empty %}
+                                <small class="text-muted opacity-50">No tags found</small>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-dark text-white">
+                    <h5 class="fw-bold mb-2">Hungry for more?</h5>
+                    <p class="small opacity-75 mb-4">Share your own secret recipes with the community!</p>
+                    <button type="button" class="btn btn-primary w-100 rounded-pill py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#postRecipeModal">
+                        + Post a Recipe
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleDescription(pk) {
+        const desc = document.getElementById('desc-' + pk);
+        const btn = document.getElementById('btn-' + pk);
+        if (desc && btn) {
+            desc.classList.toggle('expanded');
+            btn.innerText = desc.classList.contains('expanded') ? 'See less' : 'See more';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (el) {
+            return new bootstrap.Tooltip(el);
+        });
+
+        const reactionLinks = document.querySelectorAll('.reaction-link');
+        reactionLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                fetch(this.getAttribute('href'), { 
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' } 
+                })
+                .then(() => { window.location.reload(); })
+                .catch(err => console.error('Error:', err));
+            });
+        });
+    });
+</script>
+{% endblock %}

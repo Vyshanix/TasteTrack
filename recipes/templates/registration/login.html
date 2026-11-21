@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5 p-3">
+    <div class="col-md-5">
+        <div class="card p-4 shadow bg-white rounded-3">
+            <h2 class="fw-bold mb-4 text-center">Login to TasteTrack</h2>
+            
+            <form method="POST">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                    <div class="alert alert-danger p-2 small">
+                        Invalid Username or Password. Please try again.
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="id_username" class="form-label small text-muted">Username:</label>
+                    <input type="text" name="username" class="form-control" id="id_username" placeholder="Enter your username" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_password" class="form-label small text-muted">Password:</label>
+                    <div class="password-wrapper" style="position: relative; display: flex; align-items: center;">
+                        <input type="password" name="password" class="form-control" id="id_password" placeholder="Enter your password" required style="padding-right: 40px;">
+                        <button class="btn-toggle-password" type="button" id="togglePassword" style="position: absolute; right: 10px; background: none; border: none; color: #6c757d; padding: 0;">
+                            <i class="bi bi-eye-slash" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mt-2 rounded-pill fw-bold">Login</button>
+            </form>
+            
+            <p class="mt-4 text-center small text-muted">Don't have an account? <a href="{% url 'register' %}" class="text-decoration-none">Sign Up</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const togglePassword = document.querySelector('#togglePassword');
+    const password = document.querySelector('#id_password');
+    const eyeIcon = document.querySelector('#eyeIcon');
+
+    togglePassword.addEventListener('click', function () {
+        // Toggle the type attribute
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        
+        // Toggle the eye icon class
+        eyeIcon.classList.toggle('bi-eye');
+        eyeIcon.classList.toggle('bi-eye-slash');
+    });
+</script>
+
+<style>
+    /* Ensure the eye icon changes color on hover for better UX */
+    .btn-toggle-password:hover {
+        color: #0d6efd !important;
+    }
+    
+    /* Remove the default focus blue outline from the ghost button */
+    .btn-toggle-password:focus {
+        outline: none;
+        box-shadow: none;
+    }
+</style>
+{% endblock %}
